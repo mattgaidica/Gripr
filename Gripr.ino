@@ -2,6 +2,10 @@
 #include <LinearRegression.h>
 #include <RunningAverage.h>
 #include <FlashStorage_SAMD.h>
+#include <ArduinoBLE.h>
+
+BLEService griprService("A200");
+BLEIntCharacteristic loadChar("A201", BLERead | BLENotify);
 
 LinearRegression lr = LinearRegression();
 double linReg[2] = { 0.172, -1.533 };
@@ -23,7 +27,8 @@ long int displayTime;
 
 void setup() {
   Serial.begin(9600);
-  while (!Serial) {}
+  // while (!Serial) {}
+
   // analogReset();
   analogGain(ADC_GAIN_16);
   analogReadExtended(15);  // 16-bit samples @ 108ms
@@ -47,17 +52,40 @@ void setup() {
   lr.learn(0.0, linReg[0]);
   lr.learn(200.0, (200 * linReg[0]) + linReg[1]);  // y = m*x + b
 
+  // begin initialization
+  if (!BLE.begin()) {
+    Serial.println("BLE failed");
+    // while (1) {}
+  }
+
+  // set advertised local name and service UUID:
+  BLE.setLocalName("Gripr");
+  BLE.setAdvertisedService(griprService);
+  griprService.addCharacteristic(loadChar);
+  BLE.addService(griprService);
+
+  // init
+  loadChar.writeValue(0);
+  BLE.advertise();
+
   displayTime = millis();
 }
 
 void loop() {
-  adcVal = analogDifferential(pos_pin, neg_pin);
-  myRA.addValue(float(adcVal));
-  if (sampleCount > nSamples) {
-    actualLoad = lr.calculate(myRA.getAverage());
-    myRA.clear();
+  BLEDevice central = BLE.central();
+
+  if (central) {
+    Serial.print("Connected to central: ");
+    while (central.connected()) {
+      if (loadChar.subscribed()) {
+        adcVal = analogDifferential(pos_pin, neg_pin);
+        actualLoad = lr.calculate(adcVal);
+        loadChar.writeValue(actualLoad);
+      }
+    }
+    Serial.print(F("Disconnected from central: "));
+    Serial.println(central.address());
   }
-  sampleCount++;
 
   if (millis() > displayTime + DISPLAY_MS) {  // !! split these up
     displayTime = millis();
