@@ -60,6 +60,7 @@ void setup() {
 
   // set advertised local name and service UUID:
   BLE.setLocalName("Gripr");
+  BLE.setDeviceName("Gripr");
   BLE.setAdvertisedService(griprService);
   griprService.addCharacteristic(loadChar);
   BLE.addService(griprService);
@@ -76,6 +77,7 @@ void loop() {
 
   if (central) {
     Serial.print("Connected to central: ");
+    Serial.println(central.address());
     while (central.connected()) {
       if (loadChar.subscribed()) {
         adcVal = analogDifferential(pos_pin, neg_pin);
