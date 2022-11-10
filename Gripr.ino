@@ -19,8 +19,8 @@ int sampleCount = 0;
 int16_t adcVal = 0;
 int samplesCount = 0;
 
-const int neg_pin = A0;  //A6;
-const int pos_pin = A3;  //A5;
+const int neg_pin = A0;
+const int pos_pin = A3;
 
 const int DISPLAY_MS = 50;
 long int displayTime;
