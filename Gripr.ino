@@ -39,14 +39,8 @@ void setup() {
   EEPROM.get(eeAddress, eeprom_linReg[0]);
   EEPROM.get(eeAddress + sizeof(double), eeprom_linReg[1]);
   if (!isnan(eeprom_linReg[0]) & !isnan(eeprom_linReg[1])) {
-    Serial.println("FLASH RECOVERED");
-    Serial.print(eeprom_linReg[0], HEX);
-    Serial.print(" - ");
-    Serial.println(eeprom_linReg[1], HEX);
     linReg[0] = eeprom_linReg[0];
     linReg[1] = eeprom_linReg[1];
-  } else {
-    Serial.println("FLASH NAN");
   }
   lr.reset();
   lr.learn(0.0, linReg[0]);
@@ -72,6 +66,7 @@ void setup() {
   displayTime = millis();
 }
 
+// !! add adVal back into serial loop
 void loop() {
   BLEDevice central = BLE.central();
 
@@ -91,9 +86,12 @@ void loop() {
 
   if (millis() > displayTime + DISPLAY_MS) {  // !! split these up
     displayTime = millis();
-    Serial.print("300, -300, ");
-    // Serial.print(String(myRA.getAverage()) + ", ");
-    Serial.println(actualLoad, 3);
+    Serial.print("load:");
+    Serial.print(actualLoad, 3);
+    Serial.print(", ");
+    Serial.println("lowLim:-30, upLim:300");
+    adcVal = analogDifferential(pos_pin, neg_pin);
+    actualLoad = lr.calculate(adcVal);
   }
 
   if (Serial.available()) {
