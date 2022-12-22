@@ -7,6 +7,8 @@
 BLEService griprService("A200");
 BLEIntCharacteristic loadChar("A201", BLERead | BLENotify);
 
+const int MIRROR_LED = 2;
+
 LinearRegression lr = LinearRegression();
 double linReg[2] = { 0.172, -1.533 };
 double actualLoad = 0;
@@ -63,7 +65,9 @@ void setup() {
   loadChar.writeValue(0);
   BLE.advertise();
 
-  displayTime = millis();
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(MIRROR_LED, OUTPUT);
+  displayTime = millis();  
 }
 
 // !! add adVal back into serial loop
@@ -84,14 +88,21 @@ void loop() {
     Serial.println(central.address());
   }
 
-  if (millis() > displayTime + DISPLAY_MS) {  // !! split these up
+  if (millis() > displayTime + DISPLAY_MS) {
     displayTime = millis();
+    adcVal = analogDifferential(pos_pin, neg_pin);
+    actualLoad = lr.calculate(adcVal);
+    if (abs(actualLoad) > 50) {
+      digitalWrite(LED_BUILTIN,HIGH);
+      digitalWrite(MIRROR_LED,HIGH);
+    } else {
+      digitalWrite(LED_BUILTIN,LOW);
+      digitalWrite(MIRROR_LED,LOW);
+    }
     Serial.print("load:");
     Serial.print(actualLoad, 3);
     Serial.print(", ");
     Serial.println("lowLim:-30, upLim:300");
-    adcVal = analogDifferential(pos_pin, neg_pin);
-    actualLoad = lr.calculate(adcVal);
   }
 
   if (Serial.available()) {
